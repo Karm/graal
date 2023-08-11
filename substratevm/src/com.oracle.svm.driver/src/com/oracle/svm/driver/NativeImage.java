@@ -587,9 +587,8 @@ public class NativeImage {
                 jars.addAll(getJars(libTruffleDir, "truffle-compiler"));
                 Path builderPath = rootDir.resolve(Paths.get("lib", "truffle", "builder"));
                 if (Files.exists(builderPath)) {
-                    List<Path> truffleRuntimeSVMJars = getJars(builderPath, "truffle-runtime-svm", "truffle-enterprise-svm");
-                    jars.addAll(truffleRuntimeSVMJars);
-                    if (libJvmciDir != null && !truffleRuntimeSVMJars.isEmpty()) {
+                    jars.addAll(getJars(builderPath, "truffle-runtime-svm", "truffle-enterprise-svm"));
+                    if (libJvmciDir != null) {
                         // truffle-runtime-svm depends on polyglot, which is not part of non-jlinked
                         // JDKs
                         jars.addAll(getJars(libJvmciDir, "polyglot"));
@@ -1595,6 +1594,8 @@ public class NativeImage {
         }
         List<Path> finalImageModulePath = applicationModules.values().stream().toList();
 
+        List<String> mainClassArg = config.getGeneratorMainClass();
+        Map<String, Path> modules = listModulesFromPath(javaExecutable, javaArgs, mainClassArg, mp.stream().distinct().toList(), imagemp.stream().distinct().toList());
         if (!addModules.isEmpty()) {
 
             arguments.add("-D" + ModuleSupport.PROPERTY_IMAGE_EXPLICITLY_ADDED_MODULES + "=" +
@@ -1618,7 +1619,7 @@ public class NativeImage {
             }
         }
 
-        arguments.addAll(config.getGeneratorMainClass());
+        arguments.addAll(mainClassArg);
 
         Path keepAliveFile;
         if (OS.getCurrent().hasProcFS) {
@@ -1755,29 +1756,72 @@ public class NativeImage {
         }
     }
 
-    private Set<String> getBuiltInModules() {
-        Path jdkRoot = config.rootDir;
-        try {
-            var reader = ImageReader.open(jdkRoot.resolve("lib/modules"));
-            return new LinkedHashSet<>(List.of(reader.getModuleNames()));
-        } catch (IOException e) {
-            throw showError("Unable to determine builtin modules of JDK in " + jdkRoot, e);
-        }
-    }
-
-    private Map<String, Path> getModulesFromPath(Collection<Path> modulePath) {
-        if (!config.modulePathBuild || modulePath.isEmpty()) {
+    /**
+     * Resolves and lists all modules given a module path.
+     *
+     * @see #callListModules(String, List, List, List, List)
+     */
+    private Map<String, Path> listModulesFromPath(String javaExecutable, List<String> javaArgs, List<String> mainClassArg, List<Path> modulePath, List<Path> imagemp) {
+        if (modulePath.isEmpty() || !config.modulePathBuild) {
             return Map.of();
         }
+        String modulePathEntries = modulePath.stream()
+                        .map(Path::toString)
+                        .collect(Collectors.joining(File.pathSeparator));
+        String imagePathEntries = imagemp.stream()
+                        .map(Path::toString)
+                        .collect(Collectors.joining(File.pathSeparator));
+        List<String> imagempArgs = List.of("-imagemp", imagePathEntries);
+        List<String> modulePathArgs = List.of("--module-path", modulePathEntries);
+        return callListModules(javaExecutable, javaArgs, mainClassArg, imagempArgs, modulePathArgs);
+    }
 
-        LinkedHashMap<String, Path> mrefs = new LinkedHashMap<>();
+    /**
+     * Calls the image generator's <code>--list-modules</code> to list all modules and parses the
+     * output. The output consists of a map with module name as key and {@link Path} to jar file if
+     * the module is not installed as part of the JDK. If the module is installed as part of the
+     * jdk/boot-layer then a <code>null</code> path will be returned.
+     * <p>
+     * This is a much more robust solution then trying to parse the JDK file structure manually.
+     */
+    private static Map<String, Path> callListModules(String javaExecutable, List<String> javaArgs, List<String> mainClassArg, List<String> imagempArgs, List<String> modulePathArgs) {
+        Process listModulesProcess = null;
+        Map<String, Path> result = new LinkedHashMap<>();
         try {
-            ModuleFinder finder = ModuleFinder.of(modulePath.toArray(Path[]::new));
-            for (ModuleReference mref : finder.findAll()) {
-                String moduleName = mref.descriptor().name();
-                VMError.guarantee(moduleName != null && !moduleName.isEmpty(), "Unnamed module on modulePath");
-                URI moduleLocation = mref.location().orElseThrow(() -> VMError.shouldNotReachHere("ModuleReference for module " + moduleName + " has no location."));
-                mrefs.put(moduleName, Path.of(moduleLocation));
+            var pb = new ProcessBuilder(javaExecutable);
+            pb.command().addAll(javaArgs);
+            pb.command().addAll(modulePathArgs);
+            pb.command().addAll(mainClassArg);
+            pb.command().addAll(imagempArgs);
+            pb.command().add("-H:+ListModules");
+            pb.environment().clear();
+            listModulesProcess = pb.start();
+
+            List<String> lines;
+            try (var br = new BufferedReader(new InputStreamReader(listModulesProcess.getInputStream()))) {
+                lines = br.lines().toList();
+            }
+            int exitStatus = listModulesProcess.waitFor();
+            if (exitStatus != 0) {
+                throw showError("Determining image-builder observable modules failed (Exit status %d). Process output: %n%s".formatted(exitStatus, String.join(System.lineSeparator(), lines)));
+            }
+            for (String line : lines) {
+                String[] splitString = StringUtil.split(line, " ", 3);
+                String[] splitModuleNameAndVersion = StringUtil.split(splitString[0], "@", 2);
+                Path externalPath = null;
+                if (splitString.length > 1) {
+                    String pathURI = splitString[1].trim(); // url: file://path/to/file
+                    if (pathURI.startsWith("file://")) {
+                        externalPath = Path.of(URI.create(pathURI)).toAbsolutePath();
+                    }
+                }
+                result.put(splitModuleNameAndVersion[0], externalPath);
+            }
+        } catch (IOException | InterruptedException e) {
+            throw showError(e.getMessage());
+        } finally {
+            if (listModulesProcess != null) {
+                listModulesProcess.destroy();
             }
         } catch (FindException e) {
             throw showError("Failed to collect ModuleReferences for module-path entries " + modulePath, e);
