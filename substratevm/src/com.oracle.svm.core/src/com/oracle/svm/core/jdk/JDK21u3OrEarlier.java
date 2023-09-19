@@ -24,7 +24,11 @@
  */
 package com.oracle.svm.core.jdk;
 
-import java.util.function.BooleanSupplier;
+import org.graalvm.nativeimage.Platform;
+
+import com.oracle.svm.core.feature.AutomaticallyRegisteredFeature;
+import com.oracle.svm.core.feature.InternalFeature;
+import com.oracle.svm.hosted.FeatureImpl;
 
 import org.graalvm.compiler.serviceprovider.JavaVersionUtil;
 
@@ -34,7 +38,13 @@ public class JDK21u3OrEarlier implements BooleanSupplier {
                     (JavaVersionUtil.JAVA_SPEC == 21 && Runtime.version().update() <= 3);
 
     @Override
-    public boolean getAsBoolean() {
-        return jdk21u3OrEarlier;
+    public void beforeAnalysis(BeforeAnalysisAccess access) {
+        access.registerReachabilityHandler(duringAnalysisAccess -> {
+            FeatureImpl.BeforeAnalysisAccessImpl beforeAnalysisAccess = (FeatureImpl.BeforeAnalysisAccessImpl) access;
+            beforeAnalysisAccess.getNativeLibraries().addStaticJniLibrary("jimage");
+            if (!Platform.includedIn(Platform.WINDOWS.class)) {
+                beforeAnalysisAccess.getNativeLibraries().addDynamicNonJniLibrary("stdc++");
+            }
+        }, access.findClassByName("jdk.internal.jimage.NativeImageBuffer"));
     }
 }
