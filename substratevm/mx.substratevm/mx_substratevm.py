@@ -1011,9 +1011,7 @@ driver_build_args = [
     '--features=com.oracle.svm.driver.APIOptionFeature',
     '--initialize-at-build-time=com.oracle.svm.driver',
     '--link-at-build-time=com.oracle.svm.driver,com.oracle.svm.driver.metainf',
-]
-
-driver_exe_build_args = driver_build_args + svm_experimental_options([
+] + svm_experimental_options([
     '-H:+AllowJRTFileSystem',
     '-H:IncludeResources=com/oracle/svm/driver/launcher/.*',
     '-H:-ParseRuntimeOptions',
