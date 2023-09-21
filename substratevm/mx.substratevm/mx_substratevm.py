@@ -1011,7 +1011,9 @@ driver_build_args = [
     '--features=com.oracle.svm.driver.APIOptionFeature',
     '--initialize-at-build-time=com.oracle.svm.driver',
     '--link-at-build-time=com.oracle.svm.driver,com.oracle.svm.driver.metainf',
-] + svm_experimental_options([
+]
+
+driver_exe_build_args = driver_build_args + svm_experimental_options([
     '-H:+AllowJRTFileSystem',
     '-H:IncludeResources=com/oracle/svm/driver/launcher/.*',
     '-H:-ParseRuntimeOptions',
@@ -1072,9 +1074,7 @@ mx_sdk_vm.register_graalvm_component(mx_sdk_vm.GraalVmJreComponent(
             build_args=driver_build_args + [
                 '--features=com.oracle.svm.agent.NativeImageAgent$RegistrationFeature',
                 '--enable-url-protocols=jar',
-            ] + svm_experimental_options([
-                '-H:+StaticLibStdCpp',
-            ]),
+            ],
             headers=False,
             home_finder=False,
         ),
@@ -1088,9 +1088,7 @@ mx_sdk_vm.register_graalvm_component(mx_sdk_vm.GraalVmJreComponent(
             ],
             build_args=driver_build_args + [
                 '--features=com.oracle.svm.diagnosticsagent.NativeImageDiagnosticsAgent$RegistrationFeature',
-            ] + svm_experimental_options([
-                '-H:+StaticLibStdCpp',
-            ]),
+            ],
             headers=False,
             home_finder=False,
         ),
