@@ -181,15 +181,12 @@ final class Target_jdk_internal_jimage_BasicImageReader {
     /* Ensure NativeImageBuffer never gets used as part of using BasicImageReader */
     @Alias //
     @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.FromAlias, isFinal = true) //
-    // Checkstyle: stop
     static boolean USE_JVM_MAP = false;
-    // Checkstyle: resume
 }
 
 @TargetClass(className = "jdk.internal.jimage.NativeImageBuffer")
 @Substitute
 final class Target_jdk_internal_jimage_NativeImageBuffer {
-    @SuppressWarnings("unused")
     @Substitute
     static ByteBuffer getNativeMap(String imagePath) {
         throw VMError.unsupportedFeature("Using jdk.internal.jimage.NativeImageBuffer is not supported");
