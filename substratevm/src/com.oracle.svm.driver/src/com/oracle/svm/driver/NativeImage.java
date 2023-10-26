@@ -2218,17 +2218,12 @@ public class NativeImage {
 
         Path classpathEntryFinal = useBundle() ? bundleSupport.substituteClassPath(classpathEntry) : classpathEntry;
         if (!imageClasspath.contains(classpathEntryFinal) && !customImageClasspath.contains(classpathEntryFinal)) {
-            /*
-             * Maintain correct order by adding entry before processing its potential "Class-Path"
-             * attributes from META-INF/MANIFEST.MF (in case the entry is a jar-file).
-             */
             boolean added = destination.add(classpathEntryFinal);
             if (ClasspathUtils.isJar(classpathEntryFinal)) {
                 processJarManifestMainAttributes(classpathEntryFinal, (jarFilePath, attributes) -> handleClassPathAttribute(destination, jarFilePath, attributes));
             }
-            boolean forcedOnModulePath = processClasspathNativeImageMetaInf(classpathEntryFinal);
-            if (added && forcedOnModulePath) {
-                /* Entry makes use of ForceOnModulePath. Undo adding to classpath. */
+            boolean ignore = processClasspathNativeImageMetaInf(classpathEntryFinal);
+            if (added && ignore) {
                 destination.remove(classpathEntryFinal);
             }
         }
