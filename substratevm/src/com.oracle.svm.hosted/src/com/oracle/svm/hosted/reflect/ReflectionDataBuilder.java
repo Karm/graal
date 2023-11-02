@@ -286,10 +286,6 @@ public class ReflectionDataBuilder extends ConditionalConfigurationRegistry impl
         checkNotSealed();
         register(analysisUniverse -> registerConditionalConfiguration(condition, () -> {
             for (Executable executable : executables) {
-                if (executable == null) {
-                    throw new NullPointerException("Cannot register null value as executable for reflection. " +
-                                    "Please ensure that all values you register are not null.");
-                }
                 analysisUniverse.getBigbang().postTask(debug -> registerMethod(queriedOnly, executable));
             }
         }));
@@ -423,10 +419,6 @@ public class ReflectionDataBuilder extends ConditionalConfigurationRegistry impl
     private void registerInternal(ConfigurationCondition condition, boolean queriedOnly, Field... fields) {
         register(analysisUniverse -> registerConditionalConfiguration(condition, () -> {
             for (Field field : fields) {
-                if (field == null) {
-                    throw new NullPointerException("Cannot register null value as field for reflection. " +
-                                    "Please ensure that all values you register are not null.");
-                }
                 analysisUniverse.getBigbang().postTask(debug -> registerField(field));
             }
         }));
