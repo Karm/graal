@@ -70,6 +70,7 @@ public final class Target_java_lang_VirtualThread {
     @TargetElement(onlyWith = JDK21u4OrLater.class) @Alias static int TIMED_PARKING;
     @TargetElement(onlyWith = JDK21u4OrLater.class) @Alias static int TIMED_PARKED;
     @TargetElement(onlyWith = JDK21u4OrLater.class) @Alias static int TIMED_PINNED;
+    @TargetElement(onlyWith = JDK21u4OrLater.class) @Alias static int UNPARKED;
     @Alias static Target_jdk_internal_vm_ContinuationScope VTHREAD_SCOPE;
     // Checkstyle: resume
 
@@ -170,7 +171,9 @@ public final class Target_java_lang_VirtualThread {
             } else {
                 return Thread.State.RUNNABLE;
             }
-        } else if (state == RUNNABLE) {
+        } else if (JDK21u3OrEarlier.jdk21u3OrEarlier && state == RUNNABLE) {
+            return Thread.State.RUNNABLE;
+        } else if (JDK21u4OrLater.jdk21u4OrLater && (state == UNPARKED || state == YIELDED)) {
             return Thread.State.RUNNABLE;
         } else if (state == RUNNING) {
             Object token = VirtualThreadHelper.acquireInterruptLockMaybeSwitch(this);
