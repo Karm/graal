@@ -28,8 +28,6 @@ package com.oracle.svm.test.jfr.utils.poolparsers;
 
 import java.io.IOException;
 
-import org.junit.Assert;
-
 import com.oracle.svm.core.jfr.JfrThreadRepository;
 import com.oracle.svm.core.jfr.JfrType;
 import com.oracle.svm.test.jfr.utils.JfrFileParser;
@@ -51,7 +49,7 @@ public class ThreadGroupConstantPoolParser extends AbstractRepositoryParser {
             String threadGroupName = input.readUTF(); // ThreadGroupName.
 
             /* For virtual threads, a fixed thread group id is reserved. */
-            Assert.assertTrue(threadGroupId != JfrThreadRepository.VIRTUAL_THREAD_GROUP_ID || threadGroupName.equals("VirtualThreads"));
+            assert threadGroupId != JfrThreadRepository.VIRTUAL_THREAD_GROUP_ID || threadGroupName.equals("VirtualThreads");
         }
     }
 }
