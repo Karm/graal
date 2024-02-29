@@ -39,6 +39,7 @@ import org.graalvm.word.WordFactory;
 import com.oracle.svm.core.SubstrateOptions;
 import com.oracle.svm.core.Uninterruptible;
 import com.oracle.svm.core.c.function.CEntryPointErrors;
+import com.oracle.svm.core.config.ConfigurationValues;
 import com.oracle.svm.core.heap.Heap;
 import com.oracle.svm.core.util.UnsignedUtils;
 
@@ -78,6 +79,17 @@ public abstract class AbstractCommittedMemoryProvider implements CommittedMemory
         }
 
         return CEntryPointErrors.NO_ERROR;
+    }
+
+    @Override
+    @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
+    public Pointer allocateAlignedChunk(UnsignedWord nbytes, UnsignedWord alignment) {
+        return allocate(nbytes, alignment, false);
+    }
+
+    @Override
+    public Pointer allocateUnalignedChunk(UnsignedWord nbytes) {
+        return allocate(nbytes, getAlignmentForUnalignedChunks(), false);
     }
 
     @Override

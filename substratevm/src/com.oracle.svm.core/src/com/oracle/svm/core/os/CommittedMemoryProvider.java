@@ -84,4 +84,18 @@ public interface CommittedMemoryProvider {
 
     @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
     void freeExecutableMemory(PointerBase start, UnsignedWord nbytes, UnsignedWord alignment);
+
+    /**
+     * Called by the garbage collector before a collection is started, as an opportunity to perform
+     * lazy operations, sanity checks or clean-ups.
+     */
+    default void beforeGarbageCollection() {
+    }
+
+    /**
+     * Called by the garbage collector after a collection has ended, as an opportunity to perform
+     * lazy operations, sanity checks or clean-ups.
+     */
+    default void afterGarbageCollection() {
+    }
 }
