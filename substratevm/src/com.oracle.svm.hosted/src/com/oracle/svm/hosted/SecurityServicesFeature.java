@@ -686,13 +686,10 @@ public class SecurityServicesFeature extends JNIRegistrationUtil implements Inte
                 if (engineDescription == null) {
                     return null;
                 }
-                if (consParamClassFieldFinal.getName().equals("constructorParameterClass")) {
-                    return (Class<?>) consParamClassFieldFinal.get(engineDescription);
+                if (consParamClassFieldFinal.getName().equals("constructorParameterClassName")) {
+                    return loader.findClass((String) consParamClassFieldFinal.get(engineDescription)).get();
                 }
-                String constructorParameterClassName = (String) consParamClassFieldFinal.get(engineDescription);
-                if (constructorParameterClassName != null) {
-                    return loader.findClass(constructorParameterClassName).get();
-                }
+                return (Class<?>) consParamClassFieldFinal.get(engineDescription);
             } catch (IllegalAccessException e) {
                 VMError.shouldNotReachHere(e);
             }
