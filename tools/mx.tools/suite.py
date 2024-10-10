@@ -26,8 +26,8 @@ suite = {
     "defaultLicense" : "GPLv2-CPE",
 
     "groupId" : "org.graalvm.tools",
-    "version" : "23.1.4.1",
-    "release" : False,
+    "version" : "23.1.5.0",
+    "release" : True,
     "url" : "http://openjdk.java.net/projects/graal",
     "developer" : {
         "name" : "GraalVM Development",
