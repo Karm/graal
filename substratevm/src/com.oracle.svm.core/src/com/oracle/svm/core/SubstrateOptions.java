@@ -854,12 +854,8 @@ public class SubstrateOptions {
     public static final HostedOptionKey<Integer> GenerateDebugInfo = new HostedOptionKey<>(0, SubstrateOptions::validateGenerateDebugInfo) {
         @Override
         protected void onValueUpdate(EconomicMap<OptionKey<?>, Object> values, Integer oldValue, Integer newValue) {
-            if (!OS.DARWIN.isCurrent()) {
-                /*
-                 * Keep the symbol table, as it may be used by debugging or profiling tools (e.g.,
-                 * perf). On Windows, the symbol table is included in the pdb-file, while on Linux,
-                 * it is part of the .debug file.
-                 */
+            if (OS.WINDOWS.isCurrent()) {
+                /* Keep symbols on Windows. The symbol table is part of the pdb-file. */
                 DeleteLocalSymbols.update(values, newValue == 0);
             }
         }
@@ -1156,6 +1152,9 @@ public class SubstrateOptions {
                     "\"Warn\": Print a message to stdout, including a stack trace to see what caused the issue."})//
     public static final RuntimeOptionKey<ReportingMode> MissingRegistrationReportingMode = new RuntimeOptionKey<>(
                     ReportingMode.Throw);
+
+    @Option(help = "Number of context lines printed for each missing registration error in Warn mode")//
+    public static final RuntimeOptionKey<Integer> MissingRegistrationWarnContextLines = new RuntimeOptionKey<>(8);
 
     @Option(help = "Instead of warning, throw IOExceptions for link-at-build-time resources at build time")//
     public static final HostedOptionKey<Boolean> ThrowLinkAtBuildTimeIOExceptions = new HostedOptionKey<>(false);
