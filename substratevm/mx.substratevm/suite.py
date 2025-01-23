@@ -1,8 +1,8 @@
 # pylint: disable=line-too-long
 suite = {
-    "mxversion": "7.27.1",
+    "mxversion": "7.27.5.3",
     "name": "substratevm",
-    "version" : "24.1.1.1",
+    "version" : "24.1.2.0",
     "release" : False,
     "url" : "https://github.com/oracle/graal/tree/master/substratevm",
 
